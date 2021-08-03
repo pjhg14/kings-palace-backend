@@ -6,6 +6,21 @@ class Game < ApplicationRecord
 
   SUITS = ["Spade", "Club", "Heart","Diamond"]
   VALUES = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "0", "J", "Q", "K"]
+  VALUE_MAP ={
+    "2": 99,
+    "3": 3,
+    "4": 4,
+    "5": 5,
+    "6": 6,
+    "7": 7,
+    "8": 8,
+    "9": 9,
+    "10": 10,
+    "J": 11,
+    "K": 12,
+    "Q": 13,
+    "A": 14,
+  }
 
   def init
     self.deck = self.create_deck.shuffle
@@ -115,32 +130,67 @@ class Game < ApplicationRecord
     ai_player = self.current_player
 
     # ai move
-    # select random card
+    # select card
+    # check if card can be played
     # remove card(s) from player
-    # add card(s) to discard pile
+    # add card(s) to discard pile    
 
     if !ai_player.hand.empty?
-      card = ai_player.hand.sample.code
-      Move.create(game: self, player: ai_player, data{played_cards: [card], from: "hand"})
+      cant_place = true
 
-      card_index = ai_player.hand.find_index {|hand_card| card.code == hand_card.code}
-      self.discard.push(ai_player.hand.delete_at(card_index))
+      ai_player.hand.each do |card|
+        if can_play?(card.value, self.deck.peek)
+          Move.create(game: self, player: ai_player, data{played_cards: [card], from: "hand"})
+
+          card_index = ai_player.hand.find_index {|hand_card| card.code == hand_card.code}
+          self.discard.push(ai_player.hand.delete_at(card_index))
+
+          cant_place = false
+        end
+      end
+      
+      if cant_place
+        penalty()
+      end
 
     elsif !ai_player.table[1].empty?
-      card = ai_player.table[1].sample
-      Move.create(game: self, player: ai_player, data{played_cards: [card], from: "table_shown"})
+      cant_place = true
 
-      card_index = ai_player.table[1].find_index {|table_card| card.code == table_card.code}
-      self.discard.push(ai_player.table[1].delete_at(card_index))
+      ai_player.hand.each do |card|
+        if can_play?(card.value, self.deck.peek)
+          Move.create(game: self, player: ai_player, data{played_cards: [card], from: "table_shown"})
+
+          card_index = ai_player.table[1].find_index {|table_card| card.code == table_card.code}
+          self.discard.push(ai_player.table[1].delete_at(card_index))
+
+          cant_place = false
+        end
+      end
+      
+      if cant_place
+        penalty()
+      end
 
     elsif !ai_player.table[0].empty?
-      card = ai_player.table[0].sample
-      Move.create(game: self, player: ai_player, data{played_cards: [card], from: "table_hidden"})
+      cant_place = true
 
-      card_index = ai_player.table[0].find_index {|table_card| card.code == table_card.code}
+      ai_player.hand.each do |card|
+        if can_play?(card.value, self.deck.peek)
+          Move.create(game: self, player: ai_player, data{played_cards: [card], from: "table_hidden"})
+
+          card_index = ai_player.table[0].find_index {|table_card| card.code == table_card.code}
       self.discard.push(ai_player.table[0].delete_at(card_index))
 
+          cant_place = false
+        end
+      end
+      
+      if cant_place
+        penalty()
+      end
+
     else
+      self.is_done = true
       ai_player.has_won = true
       return
     end
@@ -210,5 +260,10 @@ class Game < ApplicationRecord
   def self.generate_code
     ('A'..'Z').to_a.sample(4).join
   end
+
+  def can_play?(played_card, dis_card)
+    VALUE_MAP[played_card.value] >= VALUE_MAP[dis_card.value]
+  end
+  
   
 end

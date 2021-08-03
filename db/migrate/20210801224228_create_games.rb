@@ -5,6 +5,7 @@ class CreateGames < ActiveRecord::Migration[6.1]
       t.integer :turn
       t.boolean :can_join
       t.boolean :is_solo_game
+      t.boolean :is_done
 
       t.timestamps
     end

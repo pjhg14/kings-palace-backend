@@ -26,6 +26,8 @@ class GamesController < ApplicationController
 
     if params[:is_solo_game]
       ai_player = Player.create(user: @user, game: game, is_ai: true, is_host: false, has_won: false)
+
+      game.start
     end
     
     render json: game
@@ -62,7 +64,7 @@ class GamesController < ApplicationController
     game = game.find(params[:id])
     host_player = game.players.find_by(is_host: true)
 
-    if host_player.email == @user
+    if host_player.username == @user.username
       game.start
 
       broadcast_game_state

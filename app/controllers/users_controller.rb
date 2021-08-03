@@ -23,7 +23,7 @@ class UsersController < ApplicationController
   end
 
   def login
-    user = User.find_by(email: params[:email])
+    user = User.find_by(username: params[:username])
 
     if user && user.authenticate(params[:password])
       render json: {confirmation: "success!", token: generate_token({user_id: user.id}), username: user.username}
