@@ -6,7 +6,7 @@ Rails.application.routes.draw do
 
   # Create Model Resources
   resources :users, only: [:show, :create]  
-  resources :games, only: [:create]  # Create routes for making games, joining games, viewing games
+  resources :games, only: [:show, :create]  # Create routes for making games, joining games, viewing games
   resources :moves, only: [:create]  # Create routes for making moves...
 
   get "/leaderboard", to: "users#leaderboard"

@@ -1,13 +1,19 @@
 class GamesController < ApplicationController
   before_action :logged_in?
 
+  def show
+    game = Game.find_by(room_code: params[:room_code])
+
+    render json: game
+  end
+
   def create
     builder = {
       room_code: params[:is_solo_game] ? Game.generate_code : null,
       turn: 1,
-      can_join: false,
-      is_solo_game: params[:is_solo_game]
-      # is_solo_game: params[:is_solo_game] ? true : false
+      can_join: true,
+      is_solo_game: params[:is_solo_game],
+      is_done: false
     }
 
     game = Game.create!(builder)
@@ -31,20 +37,20 @@ class GamesController < ApplicationController
   def join
     game = game.find_by(room_code: params[:room_code])
 
+    raise ArguementError.new("Game does not exist, try again") unless game
+
     if game.players.length >= 4
       raise ArguementError.new("This game is full")
     end
     
-    if !game.can_join
-      raise ArguementError.new("This game has already started, please choose another one")
-    end
+    raise ArguementError.new("This game has already started, please choose another one") unless game.can_join
 
     # allow join
     player = Player.create(user: user, game: game, is_ai: false, is_host: false, has_won: false)
 
-    GameChannel.broadcast_to(game, player)
+    broadcast_game_state
 
-    render json: {message: "Game joined"}
+    render json: game
     
   rescue => e
     # send error code
@@ -58,7 +64,8 @@ class GamesController < ApplicationController
 
     if host_player.email == @user
       game.start
-      game.can_join = false
+
+      broadcast_game_state
 
       render json: {message: "Game started"}
     else
@@ -66,5 +73,13 @@ class GamesController < ApplicationController
     end
     
   end
+
+  private
+
+  def broadcast_game_state
+    # broadcast the current state of game to the channel the particular game is hosted on
+    GameChannel.broadcast_to(game, game)
+  end
+  
   
 end

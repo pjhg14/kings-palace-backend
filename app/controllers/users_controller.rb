@@ -12,7 +12,7 @@ class UsersController < ApplicationController
 
       render json: {confirmation: "success!", token: generate_token({user_id: user.id})}
     else
-      render json: {error: "Unable to create user", details: user.errors.full_messages}
+      render json: {error: "Unable to create user", details: user.errors.full_messages, username: user.username}
     end
   end
 
@@ -26,7 +26,7 @@ class UsersController < ApplicationController
     user = User.find_by(email: params[:email])
 
     if user && user.authenticate(params[:password])
-      render json: {confirmation: "success!", token: generate_token({user_id: user.id})}
+      render json: {confirmation: "success!", token: generate_token({user_id: user.id}), username: user.username}
     else
       render json: {error: "Unable to login", details: ["User not found: Incorrect username or password"]}
     end

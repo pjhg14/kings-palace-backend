@@ -1,6 +1,9 @@
 class Game < ApplicationRecord
   attr_accessor :deck, :discard, :player_iterator
 
+  has_many :players
+  has_many :moves
+
   SUITS = ["Spade", "Club", "Heart","Diamond"]
   VALUES = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "0", "J", "Q", "K"]
 
@@ -21,6 +24,7 @@ class Game < ApplicationRecord
     # At this point allow players to swap out cards from hand to face up table [1] (Might be a todo)
 
     self.player_iterator = self.players.to_enum
+    self.can_join = false
   end
 
   # def finish
@@ -35,17 +39,25 @@ class Game < ApplicationRecord
   def penalty
     # If current player was not able to play any cards, move discard to their hand
     self.current_player.hand.push(self.discard).flatten
-    self.discard = []
+    self.discard.clear
+
+    self.iterate_players
   end
   
 
   def iterate_players
     self.player_iterator.next
+    self.turn += 1
 
     # test iterated player.is_ai = true
     if self.player_iterator.peek.is_ai
       # if true, do ai move
-      self.ai_move
+      reset = self.ai_move
+
+      # if ai plays a 2 it goes again until it does not 
+      while reset
+        reset = self.ai_move
+      end
     end
 
     # then iterate again
@@ -78,43 +90,59 @@ class Game < ApplicationRecord
     # remove card(s) from player and puts it in the discard pile
     case from
     when "hand"
-      card_index = player.hand.find_index {|hand_card| card.code == hand_card.code}
+      card_index = player.hand.find_index {|hand_card| card == hand_card.code}
       self.discard.push(player.hand.delete_at(card_index))
     when "table_shown"
-      card_index = player.table[1].find_index {|table_card| card.code == table_card.code}
+      card_index = player.table[1].find_index {|table_card| card == table_card.code}
       self.discard.push(player.table[1].delete_at(card_index))
     when "table_hidden"
-      card_index = player.table[0].find_index {|table_card| card.code == table_card.code}
+      card_index = player.table[0].find_index {|table_card| card == table_card.code}
       self.discard.push(player.table[0].delete_at(card_index))
     else # ???
       # ummmm...
     end
+    
+    # Needs logic to avoid dead theoretical dead games
+    # if card.value == "10"
+    #   discard.clear
+    # end
+    
+    card.value == "2" # || card.value == "10"
 
   end
 
   def ai_move
     ai_player = self.current_player
+
     # ai move
     # select random card
     # remove card(s) from player
     # add card(s) to discard pile
 
     if !ai_player.hand.empty?
-      card = ai_player.hand.sample
+      card = ai_player.hand.sample.code
+      Move.create(game: self, player: ai_player, data{played_cards: [card], from: "hand"})
+
       card_index = ai_player.hand.find_index {|hand_card| card.code == hand_card.code}
       self.discard.push(ai_player.hand.delete_at(card_index))
 
     elsif !ai_player.table[1].empty?
       card = ai_player.table[1].sample
+      Move.create(game: self, player: ai_player, data{played_cards: [card], from: "table_shown"})
+
       card_index = ai_player.table[1].find_index {|table_card| card.code == table_card.code}
       self.discard.push(ai_player.table[1].delete_at(card_index))
 
     elsif !ai_player.table[0].empty?
       card = ai_player.table[0].sample
+      Move.create(game: self, player: ai_player, data{played_cards: [card], from: "table_hidden"})
+
       card_index = ai_player.table[0].find_index {|table_card| card.code == table_card.code}
       self.discard.push(ai_player.table[0].delete_at(card_index))
+
     else
       ai_player.has_won = true
+      return
     end
       
     # if player.hand.length < 3 & deck is not empty, draw cards until hand.length = 3
@@ -123,20 +151,23 @@ class Game < ApplicationRecord
         self.pickup()
       end
     end
+
+    # if ai played a 2 return true otherwise return false
+    card.value == "2"
   end
   
   def deal
     # deal face down cards
     self.players.each do |player|
       3.times do
-        player.table[0].push(self.deck.pop )
+        player.table[0].push(self.deck.pop)
       end
     end
 
     # deal face up cards
     self.players.each do |player|
       3.times do
-        player.table[1].push(self.deck.pop )
+        player.table[1].push(self.deck.pop)
       end
     end
     
