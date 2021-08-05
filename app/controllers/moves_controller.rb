@@ -64,18 +64,6 @@ class MovesController < ApplicationController
     end
 
   end
-
-  def penalize
-    game = Game.find(params[:game_id])
-    player = game.current_player
-
-    game.penalty
-
-    broadcast_game_state
-
-    render json: {message: "#{player.username} was penalized"}
-
-  end
   
   private
 

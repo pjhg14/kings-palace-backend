@@ -9,14 +9,13 @@ class GamesController < ApplicationController
 
   def create
     builder = {
-      room_code: params[:is_solo_game] ? Game.generate_code : null,
+      room_code: Game.generate_code,
       turn: 1,
       can_join: true,
-      is_solo_game: params[:is_solo_game],
       is_done: false
     }
 
-    game = Game.create!(builder)
+    game = Game.create!(permit_params.merge(builder))
     
     # init game
     game.init
@@ -69,11 +68,42 @@ class GamesController < ApplicationController
 
       broadcast_game_state
 
-      render json: {message: "Game started"}
+      if game.is_solo_game
+        render json: game
+      else
+        render json: {message: "Game started"}
+      end
     else
       render json: {error: "Only host can start game"}
     end
     
+  end
+
+  def leave
+    game = Game.find(params[:id])
+
+    game.destroy
+
+    render json: {message: "Game deleted"}
+
+  rescue
+    render json: {error: "something went wrong"}
+  end
+  
+
+  def penalize
+    game = Game.find(params[:game_id])
+    player = game.current_player
+
+    game.penalty
+
+    broadcast_game_state
+
+    if game.is_solo_game
+      render json: game
+    else
+      render json: {message: "#{player.username} was penalized"}
+    end
   end
 
   private
@@ -81,6 +111,10 @@ class GamesController < ApplicationController
   def broadcast_game_state
     # broadcast the current state of game to the channel the particular game is hosted on
     GameChannel.broadcast_to(game, game)
+  end
+  
+  def permit_params
+    params.require(:game).permit(:is_solo_game)
   end
   
   

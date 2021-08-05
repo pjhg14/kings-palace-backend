@@ -1,9 +1,14 @@
 class Game < ApplicationRecord
+  # instance Vars --------------------------------------------------------------------------------/
   attr_accessor :deck, :discard, :player_iterator
+  # ----------------------------------------------------------------------------------------------/
 
-  has_many :players
-  has_many :moves
+  # Relations ------------------------------------------------------------------------------------/
+  has_many :players, :dependant=> destroy_all
+  has_many :moves, :dependant => destroy_all
+  # ----------------------------------------------------------------------------------------------/
 
+  # Constants ------------------------------------------------------------------------------------/
   SUITS = ["Spade", "Club", "Heart","Diamond"]
   VALUES = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "0", "J", "Q", "K"]
   VALUE_MAP ={
@@ -21,7 +26,9 @@ class Game < ApplicationRecord
     "Q": 13,
     "A": 14,
   }
+  # ----------------------------------------------------------------------------------------------/
 
+  # Game initialize method
   def init
     self.deck = self.create_deck.shuffle
     self.discard = []
@@ -35,6 +42,9 @@ class Game < ApplicationRecord
 
     # Give appropriate cards to current players
     self.deal
+
+    # Place card on discard from top of deck
+    discard.push(deck.pop)
     
     # At this point allow players to swap out cards from hand to face up table [1] (Might be a todo)
 
@@ -135,9 +145,8 @@ class Game < ApplicationRecord
     # remove card(s) from player
     # add card(s) to discard pile    
 
+    cant_place = true
     if !ai_player.hand.empty?
-      cant_place = true
-
       ai_player.hand.each do |card|
         if can_play?(card.value, self.deck.peek)
           Move.create(game: self, player: ai_player, data{played_cards: [card], from: "hand"})
@@ -145,6 +154,7 @@ class Game < ApplicationRecord
           card_index = ai_player.hand.find_index {|hand_card| card.code == hand_card.code}
           self.discard.push(ai_player.hand.delete_at(card_index))
 
+          value = card.value
           cant_place = false
         end
       end
@@ -154,15 +164,15 @@ class Game < ApplicationRecord
       end
 
     elsif !ai_player.table[1].empty?
-      cant_place = true
 
-      ai_player.hand.each do |card|
+      ai_player.table[1].each do |card|
         if can_play?(card.value, self.deck.peek)
           Move.create(game: self, player: ai_player, data{played_cards: [card], from: "table_shown"})
 
           card_index = ai_player.table[1].find_index {|table_card| card.code == table_card.code}
           self.discard.push(ai_player.table[1].delete_at(card_index))
 
+          value = card.value
           cant_place = false
         end
       end
@@ -172,27 +182,28 @@ class Game < ApplicationRecord
       end
 
     elsif !ai_player.table[0].empty?
-      cant_place = true
-
-      ai_player.hand.each do |card|
+    
+      ai_player.table[0].each do |card|
         if can_play?(card.value, self.deck.peek)
-          Move.create(game: self, player: ai_player, data{played_cards: [card], from: "table_hidden"})
+          Move.create(game: self, player: ai_player, data: {played_cards: [card], from: "table_hidden"})
 
           card_index = ai_player.table[0].find_index {|table_card| card.code == table_card.code}
-      self.discard.push(ai_player.table[0].delete_at(card_index))
+          self.discard.push(ai_player.table[0].delete_at(card_index))
 
+          value = card.value
           cant_place = false
         end
-      end
-      
-      if cant_place
-        penalty()
       end
 
     else
       self.is_done = true
       ai_player.has_won = true
       return
+    end
+
+    # if can't place flag never tripped
+    if cant_place
+      penalty()
     end
       
     # if player.hand.length < 3 & deck is not empty, draw cards until hand.length = 3

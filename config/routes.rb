@@ -12,6 +12,7 @@ Rails.application.routes.draw do
   get "/leaderboard", to: "users#leaderboard"
   post "/games/join", to: "games#join"
   post "/games/:id/start", to: "games#start"
+  post "/games/:id/leave", to: "games#leave"
   post "/users/login", to: "users#login"
 
 end
