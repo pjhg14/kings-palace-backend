@@ -117,5 +117,4 @@ class GamesController < ApplicationController
     params.require(:game).permit(:is_solo_game)
   end
   
-  
 end

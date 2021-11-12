@@ -4,25 +4,7 @@ class Game < ApplicationRecord
   has_many :turns, dependant: destroy_all
   # ----------------------------------------------------------------------------------------------/
 
-  # Constants ------------------------------------------------------------------------------------/
-  SUITS = ["Spade", "Club", "Heart","Diamond"]
-  VALUES = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "0", "J", "Q", "K"]
-  VALUE_MAP ={
-    "2": 99,
-    "3": 3,
-    "4": 4,
-    "5": 5,
-    "6": 6,
-    "7": 7,
-    "8": 8,
-    "9": 9,
-    "10": 10,
-    "J": 11,
-    "K": 12,
-    "Q": 13,
-    "A": 14,
-  }
-  # ----------------------------------------------------------------------------------------------/
+  
 
   # Game initialize method
   def init
@@ -91,27 +73,7 @@ class Game < ApplicationRecord
   end
 
   def create_deck
-    SUITS.map do |suit|
-      VALUES.map do |value| 
-        case value
-        when "A"
-          full_value = "Ace"
-        when "0"
-          full_value = "10"
-        when "J"
-          full_value = "Jack"
-        when "Q"
-          full_value = "Queen"
-        when "K"
-          full_value = "King"
-        else
-          full_value = value
-        end
-
-        # Return card hash
-        { suit: suit, value: value, code: suit[0] + value, full_value: full_value } 
-      end.flatten
-    end
+    
   end
 
   def self.generate_code
