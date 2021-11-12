@@ -12,7 +12,7 @@ class GameChannel < ApplicationCable::Channel
 
     if @game.players.empty
       stop_stream_for @game
-      game.destroy
+      @game.destroy
     end
     
   end

@@ -1,11 +1,7 @@
 class Game < ApplicationRecord
-  # instance Vars --------------------------------------------------------------------------------/
-  attr_accessor :deck, :discard, :player_iterator
-  # ----------------------------------------------------------------------------------------------/
-
   # Relations ------------------------------------------------------------------------------------/
-  has_many :players, :dependant=> destroy_all
-  has_many :moves, :dependant => destroy_all
+  has_many :players, dependant: destroy_all
+  has_many :turns, dependant: destroy_all
   # ----------------------------------------------------------------------------------------------/
 
   # Constants ------------------------------------------------------------------------------------/
