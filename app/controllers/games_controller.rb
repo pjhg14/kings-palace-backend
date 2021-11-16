@@ -8,14 +8,16 @@ class GamesController < ApplicationController
   end
 
   def create
-    builder = {
+    initial_game = {
       room_code: Game.generate_code,
-      turn: 1,
-      can_join: true,
-      is_done: false
+      turns: 1,
+      started: false,
+      swap_phase: false,
+      main_phase: false,
+      finished: false
     }
 
-    game = Game.create!(permit_params.merge(builder))
+    game = Game.create(permit_params.merge(initial_game))
     
     # init game
     game.init
@@ -26,7 +28,7 @@ class GamesController < ApplicationController
     if params[:is_solo_game]
       ai_player = Player.create(user: @user, game: game, is_ai: true, is_host: false, has_won: false)
 
-      game.start
+      game.start_swaps
     end
     
     render json: game
@@ -40,6 +42,7 @@ class GamesController < ApplicationController
 
     raise ArguementError.new("Game does not exist, try again") unless game
 
+    # change to render guard clause
     if game.players.length >= 4
       raise ArguementError.new("This game is full")
     end
@@ -58,7 +61,7 @@ class GamesController < ApplicationController
     render json: {error: e.message}
   end
   
-  # Run start after connections are established
+  # Run start after (swaps are done)
   def start
     game = game.find(params[:id])
     host_player = game.players.find_by(is_host: true)

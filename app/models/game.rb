@@ -1,25 +1,57 @@
 class Game < ApplicationRecord
   # Relations ------------------------------------------------------------------------------------/
+  has_one :deck, dependant: destroy_all
+  has_one :discard, dependant: destroy_all
   has_many :players, dependant: destroy_all
   has_many :turns, dependant: destroy_all
   # ----------------------------------------------------------------------------------------------/
 
-  
-
   # Game initialize method
   def init
-    self.deck = self.create_deck.shuffle
-    self.discard = []
+    # create card related fields
+    # create deck
+    deck = Deck.create(game: self)
+
+    card_indexes = (1..52).to_a
+
+    # Join cards to deck
+    Card.all.each do |card|
+      index = card_indexes.sample
+
+      DeckCard.create(deck: deck, card: card, order: index)
+
+      card_indexes.delete(index)
+    end
+    
+    # create discard
+    Discard.create(game: self)
   end
 
-  def start
+  def start_swaps
     # Initialize player virtual fields (Hand & Table)
+    self.players.each do |player|
+      # create hand
 
-    # Give appropriate cards to current players
+      # create table
 
-    # Place card on discard from top of deck
+      # deal cards
+    end
     
-    # At this point allow players to swap out cards from hand to face up table [1] (Might be a todo)
+    # At this point allow players to swap out cards from hand to face up table [1]
+    self.swap_phase = true
+  end
+  
+
+  def start
+    # Place card on discard from top of deck
+    # get card from top of deck
+    card = self.deck.deck_cards.last.card
+
+    # add card to discard pile
+    DiscardCard.create(discard: self.discard, card: card, order: self.discard.discard_cards.size + 1)
+
+    # remove card from deck
+    DeckCard.destroy_by(card: card)
   end
 
   def finish
@@ -66,10 +98,6 @@ class Game < ApplicationRecord
     
     # deal hands
     
-  end
-
-  def number_of_cards
-    self.deck.length
   end
 
   def create_deck

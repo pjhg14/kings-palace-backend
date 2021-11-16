@@ -28,19 +28,19 @@ VALUE_MAP ={
 SUITS.each do |suit|
   VALUES.each do |value| 
     case value
-      when "A"
-        full_value = "Ace"
-      when "0"
-        full_value = "10"
-      when "J"
-        full_value = "Jack"
-      when "Q"
-        full_value = "Queen"
-      when "K"
-        full_value = "King"
-      else
-        full_value = value
-      end
+    when "A"
+      full_value = "Ace"
+    when "0"
+      full_value = "10"
+    when "J"
+      full_value = "Jack"
+    when "Q"
+      full_value = "Queen"
+    when "K"
+      full_value = "King"
+    else
+      full_value = value
+    end
 
       # Return card hash
       Card.create(suit: suit, value: value, code: suit[0] + value, full_value: full_value)
